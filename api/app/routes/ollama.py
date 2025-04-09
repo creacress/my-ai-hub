@@ -1,20 +1,34 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
+from app.core.security import verify_token
+from app.core.config import OLLAMA_URL
 import httpx
 
 router = APIRouter()
 
-@router.post("/ask")
-async def ask(request: Request):
-    data = await request.json()
-    prompt = data.get("prompt", "")
+class PromptRequest(BaseModel):
+    prompt: str
+    model: str = "llama3"  # modèle par défaut
 
+@router.post("/ask")
+async def ask(data: PromptRequest, user=Depends(verify_token)):
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
-                "http://ollama:11434/api/generate",
-                json={"prompt": prompt, "model": "llama3"}
+                f"{OLLAMA_URL}/api/generate",
+                json={
+                    "prompt": data.prompt,
+                    "model": data.model,
+                    "stream": False
+                }
             )
             response.raise_for_status()
-            return response.json()
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=500, detail=f"Ollama unreachable: {str(e)}")
+            try:
+                result = response.json()
+                return {"response": result.get("response", "").strip()}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Invalid JSON response: {e}")
+    except httpx.HTTPStatusError as http_err:
+        raise HTTPException(status_code=http_err.response.status_code, detail=http_err.response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
