@@ -1,4 +1,5 @@
-FROM ubuntu:22.04
+# Use a base image
+FROM ubuntu:25.04
 
 # Évite les prompts interactifs
 ENV DEBIAN_FRONTEND=noninteractive

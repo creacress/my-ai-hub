@@ -31,7 +31,17 @@ jobs:
             cd '${{ secrets.VPS_PATH }}'
             git pull origin main
           fi
+        "
 
+    - name: Create .env file from secret
+      run: |
+        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          echo '${{ secrets.ENV_FILE }}' > '${{ secrets.VPS_PATH }}/.env'
+        "
+
+    - name: Run docker compose
+      run: |
+        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
           cd '${{ secrets.VPS_PATH }}' && \
           docker compose down && \
           docker compose up -d --build
