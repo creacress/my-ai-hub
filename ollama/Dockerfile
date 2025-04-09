@@ -8,10 +8,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Charge le modèle au build
-RUN ollama pull llama3
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 11434
 
-# Lance le modèle automatiquement
-CMD ["ollama", "run", "llama3"]
+CMD ["/entrypoint.sh"]
